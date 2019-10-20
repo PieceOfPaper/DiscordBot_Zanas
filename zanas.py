@@ -71,6 +71,8 @@ class ZanasClient(discord.Client):
     #     print(f'on_guild_update: {guild.name}({guild.id})')
     
     async def on_message(self, message):
+        if message.author == self.user:
+            return
         args = message.content.split(' ')
         if len(args) > 0:
             if args[0] == './개발자나스':
@@ -90,7 +92,16 @@ class ZanasClient(discord.Client):
                 del args[0]
                 await self.command_fieldboss_3(message, args)
             elif args[0] == './자나스':
-                await message.channel.send('계시자.. 이 목소리가 들린다면 나를 찾아와줘..')
+                if len(args) > 1 and args[1] == '도와줘':
+                    help_message = '- 필보관련 명령어\n'
+                    help_message += './필보자나스 [숲/도심/모링] [X/킬/취소]\n'
+                    help_message += './숲필보 [X/킬/취소]\n'
+                    help_message += './도심필보 [X/킬/취소]\n'
+                    help_message += './모링 [X/킬/취소]\n'
+                    help_message += './모링포니아 [X/킬/취소]\n'
+                    await message.channel.send(help_message)
+                else:
+                    await message.channel.send('계시자.. 이 목소리가 들린다면 나를 찾아와줘..')
 
     async def command_fieldboss(self, message, args):
             if len(args) > 0:
