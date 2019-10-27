@@ -35,7 +35,7 @@ class ZanasClient(discord.Client):
         # create the background task and run it in the background
         self.bg_task = self.loop.create_task(self.my_background_task())
 
-    async def on_connect(self):
+    # async def on_connect(self):
         # print(f'on_connect: {self.user.name}({self.user.id})')
     
     async def on_ready(self):
