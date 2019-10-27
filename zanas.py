@@ -36,39 +36,24 @@ class ZanasClient(discord.Client):
         self.bg_task = self.loop.create_task(self.my_background_task())
 
     async def on_connect(self):
-        print(f"on_connect: {self.user.name}({self.user.id})")
+        print(f"on_connect: {self.user.name} {self.user.id}")
     
     async def on_ready(self):
-        print(f"on_ready: {self.user.name}({self.user.id})")
+        print(f"on_ready: {self.user.name} {self.user.id}")
         for guild in self.guilds:
             if guild.id not in self.guildDatas:
                 self.guildDatas[guild.id] = GuildData(guild.id)
         print(f"guild data count: {len(self.guildDatas)}")
 
-    # async def on_member_join(self, member):
-    #     print(f"on_member_join: {member.display_name}({member.id})")
-
-    # async def on_member_remove(self, member):
-    #     print(f"on_member_remove: {member.display_name}({member.id})")
-
-    # async def on_member_update(self, before, after):
-    #     print(f"on_member_update: {before.display_name}({before.id}) -> {after.display_name}({after.id})")
-
-    # async def on_user_update(self, before, after):
-    #     print(f"on_user_update: {before.name}({before.id}) -> {after.name}({after.id})")
-
     async def on_guild_join(self, guild):
-        print(f"on_guild_join: {guild.name}({guild.id})")
+        print(f"on_guild_join: {guild.name} {guild.id}")
         if guild.id not in self.guildDatas:
             self.guildDatas[guild.id] = GuildData(guild.id)
 
     async def on_guild_remove(self, guild):
-        print(f"on_guild_remove: {guild.name}({guild.id})")
+        print(f"on_guild_remove: {guild.name} {guild.id}")
         if guild.id in self.guildDatas:
             del self.guildDatas[guild.id]
-
-    # async def on_guild_update(self, guild):
-    #     print(f"on_guild_update: {guild.name}({guild.id})")
     
     async def on_message(self, message):
         if message.author == self.user:
@@ -76,8 +61,8 @@ class ZanasClient(discord.Client):
         args = message.content.split(" ")
         if len(args) > 0:
             if args[0] == "./개발자나스":
-                print(f"channel: {message.channel.name}({message.channel.id})")
-                print(f"guild: {message.guild.name}({message.guild.id})")
+                print(f"channel: {message.channel.name} {message.channel.id}")
+                print(f"guild: {message.guild.name} {message.guild.id}")
                 await message.channel.send("print debug.")
             elif args[0] == "./필보자나스":
                 del args[0]
