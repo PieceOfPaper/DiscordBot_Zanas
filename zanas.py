@@ -36,14 +36,14 @@ class ZanasClient(discord.Client):
         self.bg_task = self.loop.create_task(self.my_background_task())
 
     async def on_connect(self):
-        print(f'on_connect: {self.user.name}({self.user.id})')
+        print('on_connect: {}({})'.format(self.user.name, self.user.id))
     
     async def on_ready(self):
-        print(f'on_ready: {self.user.name}({self.user.id})')
+        print('on_ready: {}({})'.format(self.user.name, self.user.id))
         for guild in self.guilds:
             if guild.id not in self.guildDatas:
                 self.guildDatas[guild.id] = GuildData(guild.id)
-        print(f'guild data count: {len(self.guildDatas)}')
+        print('guild data count: {}'.format(len(self.guildDatas)))
 
     # async def on_member_join(self, member):
     #     print(f'on_member_join: {member.display_name}({member.id})')
@@ -58,12 +58,12 @@ class ZanasClient(discord.Client):
     #     print(f'on_user_update: {before.name}({before.id}) -> {after.name}({after.id})')
 
     async def on_guild_join(self, guild):
-        print(f'on_guild_join: {guild.name}({guild.id})')
+        print('on_guild_join: {}({})'.format(guild.name, guild.id))
         if guild.id not in self.guildDatas:
             self.guildDatas[guild.id] = GuildData(guild.id)
 
     async def on_guild_remove(self, guild):
-        print(f'on_guild_remove: {guild.name}({guild.id})')
+        print('on_guild_remove: {}({})'.format(guild.name, guild.id))
         if guild.id in self.guildDatas:
             del self.guildDatas[guild.id]
 
@@ -76,8 +76,8 @@ class ZanasClient(discord.Client):
         args = message.content.split(' ')
         if len(args) > 0:
             if args[0] == './개발자나스':
-                print(f'channel: {message.channel.name}({message.channel.id})')
-                print(f'guild: {message.guild.name}({message.guild.id})')
+                print('channel: {}({})'.format(message.channel.name, message.channel.id))
+                print('guild: {}({})'.format(message.guild.name, message.guild.id))
                 await message.channel.send('print debug.')
             elif args[0] == './필보자나스':
                 del args[0]
@@ -107,7 +107,7 @@ class ZanasClient(discord.Client):
             if len(args) > 0:
                 if args[0] == '고정':
                     self.guildDatas[message.guild.id].fieldboss_channel_id = message.channel.id
-                    await message.channel.send(f'필보 알림 채널 설정 <#{message.channel.id}>')
+                    await message.channel.send('필보 알림 채널 설정 <#{}>'.format(message.channel.id))
                 elif args[0] == '숲':
                     del args[0]
                     await self.command_fieldboss_1(message, args)
@@ -130,9 +130,9 @@ class ZanasClient(discord.Client):
                 self.guildDatas[message.guild.id].filedboss_high_checked_1 = True
                 await message.channel.send('숲필보 시간 등록취소.')
         if self.guildDatas[message.guild.id].filedboss_high_checked_1:
-            await message.channel.send(f'숲필보 시간 정보없음.')
+            await message.channel.send('숲필보 시간 정보없음.')
         else:
-            await message.channel.send(f'숲필보 다음 젠 타임. {self.guildDatas[message.guild.id].filedboss_high_time_1}')
+            await message.channel.send('숲필보 다음 젠 타임. {}'.format(self.guildDatas[message.guild.id].filedboss_high_time_1))
 
     async def command_fieldboss_2(self, message, args):
         if len(args) > 0:
@@ -146,9 +146,9 @@ class ZanasClient(discord.Client):
                 self.guildDatas[message.guild.id].filedboss_high_checked_2 = True
                 await message.channel.send('도심필보 시간 등록취소.')
         if self.guildDatas[message.guild.id].filedboss_high_checked_2:
-            await message.channel.send(f'도심필보 시간 정보없음.')
+            await message.channel.send('도심필보 시간 정보없음.')
         else:
-            await message.channel.send(f'도심필보 다음 젠 타임. {self.guildDatas[message.guild.id].filedboss_high_time_2}')
+            await message.channel.send('도심필보 다음 젠 타임. {}'.format(self.guildDatas[message.guild.id].filedboss_high_time_2))
     
     async def command_fieldboss_3(self, message, args):
         if len(args) > 0:
@@ -162,9 +162,9 @@ class ZanasClient(discord.Client):
                 self.guildDatas[message.guild.id].filedboss_high_checked_3 = True
                 await message.channel.send('모링포니아 시간 등록취소.')
         if self.guildDatas[message.guild.id].filedboss_high_checked_3:
-            await message.channel.send(f'모링포니아 시간 정보없음.')
+            await message.channel.send('모링포니아 시간 정보없음.')
         else:
-            await message.channel.send(f'모링포니아 다음 젠 타임. {self.guildDatas[message.guild.id].filedboss_high_time_3}')
+            await message.channel.send('모링포니아 다음 젠 타임. {}'.format(self.guildDatas[message.guild.id].filedboss_high_time_3))
 
     async def my_background_task(self):
         await self.wait_until_ready()
