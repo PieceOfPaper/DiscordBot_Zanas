@@ -9,20 +9,62 @@ for argIdx, argVal in enumerate(sys.argv):
     if argVal == '-token':
         token = sys.argv[argIdx + 1]
 
+
+def datetime_str(t):
+    return f'{t.year}년 {t.month}월 {t.day}일 {t.hour}시 {t.minute}분 {t.second}초'
+
+def timedelta_str(t):
+    hours, remainder = divmod(t.seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f'{hours}시간 {minutes}분 {seconds}초'
+
+
+class WaitToDatetimeForm:
+    name = ''
+    channel_id = 0
+    time = datetime.datetime.now()
+    check_30min = True
+    check_10min = True
+
+    def __init__(self, name):
+        self.name = name
+
+    def get_remain_time(self):
+        return self.time - datetime.datetime.now()
+
+    def can_check_time(self):
+        return (not self.check_30min) or (not self.check_10min)
+
+    def reset_time(self, time):
+        self.time = time
+        self.check_30min = False
+        self.check_10min = False
+
+    def cancel_time(self):
+        self.time = datetime.datetime.now()
+        self.check_30min = True
+        self.check_10min = True
+        
+    def check_time(self):
+        minutes, seconds = divmod(self.time - datetime.datetime.now(), 60)
+        if not self.check_30min and minutes < 30:
+            return 30
+        elif not self.check_10min and minutes < 10:
+            return 10
+        else:
+            return -1
+
 class GuildData:
     id = 0
     last_channel_id = 0
     
-    fieldboss_channel_id = 0
-    filedboss_high_time_1 = datetime.datetime.now() #숲필보
-    filedboss_high_checked_1 = True
-    filedboss_high_time_2 = datetime.datetime.now() #도심필보
-    filedboss_high_checked_2 = True
-    filedboss_high_time_3 = datetime.datetime.now() #모링
-    filedboss_high_checked_3 = True
+    waitToDatetime = dict()
 
     def __init__(self, id):
         self.id = id
+        self.waitToDatetime['fb_1'] = WaitToDatetimeForm('숲필보 젠')
+        self.waitToDatetime['fb_2'] = WaitToDatetimeForm('도심필보 젠')
+        self.waitToDatetime['fb_m'] = WaitToDatetimeForm('모링포니아 젠')
 
 
 class ZanasClient(discord.Client):
@@ -75,115 +117,79 @@ class ZanasClient(discord.Client):
             return
         args = message.content.split(' ')
         if len(args) > 0:
-            if args[0] == './개발자나스':
-                print(f'channel: {message.channel.name}({message.channel.id})')
-                print(f'guild: {message.guild.name}({message.guild.id})')
-                await message.channel.send('print debug.')
-            elif args[0] == './필보자나스':
-                del args[0]
-                await self.command_fieldboss(message, args)
-            elif args[0] == './숲필보':
-                del args[0]
-                await self.command_fieldboss_1(message, args)
-            elif args[0] == './도심필보':
-                del args[0]
-                await self.command_fieldboss_2(message, args)
-            elif args[0] == './모링' or args[0] == './모링포니아':
-                del args[0]
-                await self.command_fieldboss_3(message, args)
-            elif args[0] == './자나스':
-                if len(args) > 1 and args[1] == '도와줘':
-                    help_message = '- 필보관련 명령어\n'
-                    help_message += './필보자나스 [숲/도심/모링] [X/킬/취소]\n'
-                    help_message += './숲필보 [X/킬/취소]\n'
-                    help_message += './도심필보 [X/킬/취소]\n'
-                    help_message += './모링 [X/킬/취소]\n'
-                    help_message += './모링포니아 [X/킬/취소]\n'
-                    await message.channel.send(help_message)
-                else:
-                    await message.channel.send('계시자.. 이 목소리가 들린다면 나를 찾아와줘..')
+            if args[0].startswith('./'):
+                if args[0] == './개발자나스':
+                    print(f'channel: {message.channel.name}({message.channel.id})')
+                    print(f'guild: {message.guild.name}({message.guild.id})')
+                    await message.channel.send('print debug.')
+                elif args[0] == './필보자나스':
+                    del args[0]
+                    await self.command_fieldboss(message, args)
+                elif args[0] == './숲필보':
+                    args[0] = '숲'
+                    await self.command_fieldboss(message, args)
+                elif args[0] == './도심필보':
+                    args[0] = '도심'
+                    await self.command_fieldboss(message, args)
+                elif args[0] == './모링' or args[0] == './모링포니아':
+                    args[0] = '모링'
+                    await self.command_fieldboss(message, args)
+                elif args[0] == './자나스':
+                    if len(args) > 1 and args[1] == '도와줘':
+                        help_message = '- 필보관련 명령어\n'
+                        help_message += './필보자나스 [숲/도심/모링] [X/킬/취소]\n'
+                        help_message += './숲필보 [X/킬/취소]\n'
+                        help_message += './도심필보 [X/킬/취소]\n'
+                        help_message += './모링 [X/킬/취소]\n'
+                        help_message += './모링포니아 [X/킬/취소]\n'
+                        await message.channel.send(help_message)
+                    else:
+                        await message.channel.send('계시자.. 이 목소리가 들린다면 나를 찾아와줘..')
 
     async def command_fieldboss(self, message, args):
             if len(args) > 0:
                 if args[0] == '고정':
                     self.guildDatas[message.guild.id].fieldboss_channel_id = message.channel.id
                     await message.channel.send(f'필보 알림 채널 설정 <#{message.channel.id}>')
-                elif args[0] == '숲':
-                    del args[0]
-                    await self.command_fieldboss_1(message, args)
-                elif args[0] == '도심':
-                    del args[0]
-                    await self.command_fieldboss_2(message, args)
-                elif args[0] == '모링' or args[0] == '모링포니아':
-                    del args[0]
-                    await self.command_fieldboss_3(message, args)
-
-    async def command_fieldboss_1(self, message, args):
-        if len(args) > 0:
-            if args[0] == '킬':
-                if self.guildDatas[message.guild.id].fieldboss_channel_id == 0:
-                    self.guildDatas[message.guild.id].fieldboss_channel_id = message.channel.id
-                self.guildDatas[message.guild.id].filedboss_high_time_1 = datetime.datetime.now() + datetime.timedelta(hours=4, minutes=10) - datetime.timedelta(minutes=30)
-                self.guildDatas[message.guild.id].filedboss_high_checked_1 = False
-                await message.channel.send('숲필보 시간 등록.')
-            elif args[0] == '취소':
-                self.guildDatas[message.guild.id].filedboss_high_checked_1 = True
-                await message.channel.send('숲필보 시간 등록취소.')
-        if self.guildDatas[message.guild.id].filedboss_high_checked_1:
-            await message.channel.send(f'숲필보 시간 정보없음.')
-        else:
-            await message.channel.send(f'숲필보 다음 젠 타임. {self.guildDatas[message.guild.id].filedboss_high_time_1}')
-
-    async def command_fieldboss_2(self, message, args):
-        if len(args) > 0:
-            if args[0] == '킬':
-                if self.guildDatas[message.guild.id].fieldboss_channel_id == 0:
-                    self.guildDatas[message.guild.id].fieldboss_channel_id = message.channel.id
-                self.guildDatas[message.guild.id].filedboss_high_time_2 = datetime.datetime.now() + datetime.timedelta(hours=4, minutes=10) - datetime.timedelta(minutes=30)
-                self.guildDatas[message.guild.id].filedboss_high_checked_2 = False
-                await message.channel.send('도심필보 시간 등록.')
-            elif args[0] == '취소':
-                self.guildDatas[message.guild.id].filedboss_high_checked_2 = True
-                await message.channel.send('도심필보 시간 등록취소.')
-        if self.guildDatas[message.guild.id].filedboss_high_checked_2:
-            await message.channel.send(f'도심필보 시간 정보없음.')
-        else:
-            await message.channel.send(f'도심필보 다음 젠 타임. {self.guildDatas[message.guild.id].filedboss_high_time_2}')
-    
-    async def command_fieldboss_3(self, message, args):
-        if len(args) > 0:
-            if args[0] == '킬':
-                if self.guildDatas[message.guild.id].fieldboss_channel_id == 0:
-                    self.guildDatas[message.guild.id].fieldboss_channel_id = message.channel.id
-                self.guildDatas[message.guild.id].filedboss_high_time_3 = datetime.datetime.now() + datetime.timedelta(hours=4, minutes=10) - datetime.timedelta(minutes=30)
-                self.guildDatas[message.guild.id].filedboss_high_checked_3 = False
-                await message.channel.send('모링포니아 시간 등록.')
-            elif args[0] == '취소':
-                self.guildDatas[message.guild.id].filedboss_high_checked_3 = True
-                await message.channel.send('모링포니아 시간 등록취소.')
-        if self.guildDatas[message.guild.id].filedboss_high_checked_3:
-            await message.channel.send(f'모링포니아 시간 정보없음.')
-        else:
-            await message.channel.send(f'모링포니아 다음 젠 타임. {self.guildDatas[message.guild.id].filedboss_high_time_3}')
+                else:
+                    waitTimeKey = ''
+                    if args[0] == '숲':
+                        waitTimeKey = 'fb_1'
+                    elif args[0] == '도심':
+                        waitTimeKey = 'fb_2'
+                    elif args[0] == '모링' or args[0] == '모링포니아':
+                        waitTimeKey = 'fb_m'
+                    waitToDatetime = self.guildDatas[message.guild.id].waitToDatetime[waitTimeKey]
+                    if len(args) > 1:
+                        if args[1] == '킬':
+                            if waitToDatetime.channel_id == 0:
+                                waitToDatetime.channel_id = message.channel.id
+                            waitToDatetime.reset_time(datetime.datetime.now() + datetime.timedelta(hours=4, minutes=10))
+                            await message.channel.send(f'{waitToDatetime.name} 시간 등록.')
+                        elif args[1] == '취소':
+                            waitToDatetime.cancel_time()
+                            await message.channel.send(f'{waitToDatetime.name} 시간 등록취소.')
+                    if not waitToDatetime.can_check_time():
+                        await message.channel.send(f'{waitToDatetime.name} 시간 정보없음.')
+                    else:
+                        await message.channel.send(f'{waitToDatetime.name} 시간 {timedelta_str(waitToDatetime.get_remain_time())} 남음.')
 
     async def my_background_task(self):
         await self.wait_until_ready()
         counter = 0
         while not self.is_closed():
             counter += 1
-            for key in self.guildDatas:
-                if self.guildDatas[key].filedboss_high_checked_1 == False:
-                    if self.guildDatas[key].filedboss_high_time_1 < datetime.datetime.now():
-                        self.guildDatas[key].filedboss_high_checked_1 = True
-                        await client.get_channel(self.guildDatas[key].fieldboss_channel_id).send('숲필보 예상 젠 시간 30분 전!')
-                if self.guildDatas[key].filedboss_high_checked_2 == False:
-                    if self.guildDatas[key].filedboss_high_time_2 < datetime.datetime.now():
-                        self.guildDatas[key].filedboss_high_checked_2 = True
-                        await client.get_channel(self.guildDatas[key].fieldboss_channel_id).send('도심필보 예상 젠 시간 30분 전!')
-                if self.guildDatas[key].filedboss_high_checked_3 == False:
-                    if self.guildDatas[key].filedboss_high_time_3 < datetime.datetime.now():
-                        self.guildDatas[key].filedboss_high_checked_3 = True
-                        await client.get_channel(self.guildDatas[key].fieldboss_channel_id).send('모링포니아 예상 젠 시간 30분 전!')
+            for guildKey in self.guildDatas:
+                for waitTimeKey in self.guildDatas[guildKey].waitToDatetime:
+                    currentWaitTime = self.guildDatas[guildKey].waitToDatetime[waitTimeKey]
+                    if currentWaitTime.can_check_time():
+                        checkSignal = currentWaitTime.check_time()
+                        if checkSignal == 30:
+                            currentWaitTime.check_30min = True
+                            await client.get_channel(currentWaitTime.channel_id).send(f'{currentWaitTime.name} 30분 전!')
+                        elif checkSignal == 10:
+                            currentWaitTime.check_10min = True
+                            await client.get_channel(currentWaitTime.channel_id).send(f'{currentWaitTime.name} 10분 전!')
             await asyncio.sleep(1)
 
 
