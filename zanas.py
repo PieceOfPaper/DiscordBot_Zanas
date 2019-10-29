@@ -23,8 +23,8 @@ class WaitToDatetimeForm:
     name = ''
     channel_id = 0
     time = datetime.datetime.now()
-    check_30min = True
-    check_10min = True
+    checked_30min = True
+    checked_10min = True
 
     def __init__(self, name):
         self.name = name
@@ -33,23 +33,30 @@ class WaitToDatetimeForm:
         return self.time - datetime.datetime.now()
 
     def can_check_time(self):
-        return (not self.check_30min) or (not self.check_10min)
+        return (not self.checked_30min) or (not self.checked_10min)
 
     def reset_time(self, time):
         self.time = time
-        self.check_30min = False
-        self.check_10min = False
+        minutes, seconds = divmod(self.get_remain_time().seconds, 60)
+        if minutes >= 30:
+            self.checked_30min = False
+        else:
+            self.checked_30min = True
+        if minutes >= 10:
+            self.checked_10min = False
+        else:
+            self.checked_10min = True
 
     def cancel_time(self):
         self.time = datetime.datetime.now()
-        self.check_30min = True
-        self.check_10min = True
+        self.checked_30min = True
+        self.checked_10min = True
         
     def check_time(self):
-        minutes, seconds = divmod(self.time - datetime.datetime.now(), 60)
-        if not self.check_30min and minutes < 30:
+        minutes, seconds = divmod(self.get_remain_time().seconds, 60)
+        if (not self.checked_30min) and minutes < 30:
             return 30
-        elif not self.check_10min and minutes < 10:
+        elif (not self.checked_10min) and minutes < 10:
             return 10
         else:
             return -1
@@ -164,7 +171,7 @@ class ZanasClient(discord.Client):
                         if args[1] == '킬':
                             if waitToDatetime.channel_id == 0:
                                 waitToDatetime.channel_id = message.channel.id
-                            waitToDatetime.reset_time(datetime.datetime.now() + datetime.timedelta(hours=4, minutes=10))
+                            waitToDatetime.reset_time(datetime.datetime.now() + datetime.timedelta(minutes=10, seconds=10))
                             await message.channel.send(f'{waitToDatetime.name} 시간 등록.')
                         elif args[1] == '취소':
                             waitToDatetime.cancel_time()
@@ -185,10 +192,10 @@ class ZanasClient(discord.Client):
                     if currentWaitTime.can_check_time():
                         checkSignal = currentWaitTime.check_time()
                         if checkSignal == 30:
-                            currentWaitTime.check_30min = True
+                            currentWaitTime.checked_30min = True
                             await client.get_channel(currentWaitTime.channel_id).send(f'{currentWaitTime.name} 30분 전!')
                         elif checkSignal == 10:
-                            currentWaitTime.check_10min = True
+                            currentWaitTime.checked_10min = True
                             await client.get_channel(currentWaitTime.channel_id).send(f'{currentWaitTime.name} 10분 전!')
             await asyncio.sleep(1)
 
