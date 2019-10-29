@@ -171,7 +171,7 @@ class ZanasClient(discord.Client):
                         if args[1] == '킬':
                             if waitToDatetime.channel_id == 0:
                                 waitToDatetime.channel_id = message.channel.id
-                            waitToDatetime.reset_time(datetime.datetime.now() + datetime.timedelta(minutes=10, seconds=10))
+                            waitToDatetime.reset_time(datetime.datetime.now() + datetime.timedelta(hours=4, minutes=10))
                             await message.channel.send(f'{waitToDatetime.name} 시간 등록.')
                         elif args[1] == '취소':
                             waitToDatetime.cancel_time()
