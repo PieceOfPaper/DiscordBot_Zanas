@@ -2,6 +2,7 @@ import discord
 import asyncio
 import sys
 import datetime
+import myutil
 
 token = 'token'
 
@@ -10,19 +11,10 @@ for argIdx, argVal in enumerate(sys.argv):
         token = sys.argv[argIdx + 1]
 
 
-def datetime_str(t):
-    return f'{t.year}년 {t.month}월 {t.day}일 {t.hour}시 {t.minute}분 {t.second}초'
-
-def timedelta_str(t):
-    hours, remainder = divmod(t.seconds, 3600)
-    minutes, seconds = divmod(remainder, 60)
-    return f'{hours}시간 {minutes}분 {seconds}초'
-
-
 class WaitToDatetimeForm:
     name = ''
     channel_id = 0
-    time = datetime.datetime.now()
+    time = datetime.datetime.utcnow()
     checked_30min = True
     checked_10min = True
 
@@ -30,7 +22,7 @@ class WaitToDatetimeForm:
         self.name = name
 
     def get_remain_time(self):
-        return self.time - datetime.datetime.now()
+        return self.time - datetime.datetime.utcnow()
 
     def can_check_time(self):
         return (not self.checked_30min) or (not self.checked_10min)
@@ -64,6 +56,8 @@ class WaitToDatetimeForm:
 class GuildData:
     id = 0
     last_channel_id = 0
+    tzinfo = None
+    
     
     waitToDatetime = dict()
 
@@ -141,6 +135,9 @@ class ZanasClient(discord.Client):
                 elif args[0] == './모링' or args[0] == './모링포니아':
                     args[0] = '모링'
                     await self.command_fieldboss(message, args)
+                elif args[0] == './크로노마법':
+                    del args[0]
+                    await self.command_time(message, args)
                 elif args[0] == './자나스':
                     if len(args) > 1 and args[1] == '도와줘':
                         help_message = '- 필보관련 명령어\n'
@@ -171,15 +168,29 @@ class ZanasClient(discord.Client):
                         if args[1] == '킬':
                             if waitToDatetime.channel_id == 0:
                                 waitToDatetime.channel_id = message.channel.id
-                            waitToDatetime.reset_time(datetime.datetime.now() + datetime.timedelta(hours=4, minutes=10))
-                            await message.channel.send(f'{waitToDatetime.name} 시간 등록.')
+                            waitToDatetime.reset_time(datetime.datetime.utcnow() + datetime.timedelta(hours=4, minutes=10))
+                            # await message.channel.send(f'{waitToDatetime.name} 시간 등록.')
                         elif args[1] == '취소':
                             waitToDatetime.cancel_time()
-                            await message.channel.send(f'{waitToDatetime.name} 시간 등록취소.')
+                            # await message.channel.send(f'{waitToDatetime.name} 시간 등록취소.')
                     if not waitToDatetime.can_check_time():
                         await message.channel.send(f'{waitToDatetime.name} 시간 정보없음.')
+                    # else:
+                    #     await message.channel.send(f'{waitToDatetime.name} 시간 {myutil.timedelta_str(waitToDatetime.get_remain_time())} 남음.')
+                    await message.channel.send(f'마지막으로 등록된 {waitToDatetime.name} 시간 {waitToDatetime.time.astimezone(self.guildDatas[message.guild.id].tzinfo)}')
+
+
+    async def command_time(self, message, args):
+            if len(args) > 0:
+                if args[0] == '초기화':
+                    if len(args) > 1:
+                        self.guildDatas[message.guild.id].tzinfo = datetime.timezone(datetime.timedelta(hours=int(args[1])))
+                        await message.channel.send(f'현재시간 {datetime.datetime.now(self.guildDatas[message.guild.id].tzinfo)}')
                     else:
-                        await message.channel.send(f'{waitToDatetime.name} 시간 {timedelta_str(waitToDatetime.get_remain_time())} 남음.')
+                        await message.channel.send('기준이 될 시간이 없습니다. ex)"./크로노마법 초기화 9"')
+            else:
+                await message.channel.send(f'현재시간 {datetime.datetime.now(self.guildDatas[message.guild.id].tzinfo)}')
+
 
     async def my_background_task(self):
         await self.wait_until_ready()
