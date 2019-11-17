@@ -2,6 +2,8 @@ import discord
 import asyncio
 import sys
 import datetime
+import random
+
 import myutil
 
 token = 'token'
@@ -138,6 +140,9 @@ class ZanasClient(discord.Client):
                 elif args[0] == './크로노마법':
                     del args[0]
                     await self.command_time(message, args)
+                elif args[0] == './오미쿠지':
+                    del args[0]
+                    await self.command_random(message, args)
                 elif args[0] == './자나스':
                     if len(args) > 1 and args[1] == '도와줘':
                         help_message = '- 필보관련 명령어\n'
@@ -181,15 +186,43 @@ class ZanasClient(discord.Client):
 
 
     async def command_time(self, message, args):
-            if len(args) > 0:
-                if args[0] == '초기화':
-                    if len(args) > 1:
-                        self.guildDatas[message.guild.id].tzinfo = datetime.timezone(datetime.timedelta(hours=int(args[1])))
-                        await message.channel.send(f'현재시간 {myutil.datetime_str(datetime.datetime.now(self.guildDatas[message.guild.id].tzinfo))}')
-                    else:
-                        await message.channel.send('기준이 될 시간이 없습니다. ex)"./크로노마법 초기화 9"')
-            else:
-                await message.channel.send(f'현재시간 {myutil.datetime_str(datetime.datetime.now(self.guildDatas[message.guild.id].tzinfo))}')
+        if len(args) > 0:
+            if args[0] == '초기화':
+                if len(args) > 1:
+                    self.guildDatas[message.guild.id].tzinfo = datetime.timezone(datetime.timedelta(hours=int(args[1])))
+                    await message.channel.send(f'현재시간 {myutil.datetime_str(datetime.datetime.now(self.guildDatas[message.guild.id].tzinfo))}')
+                else:
+                    await message.channel.send('기준이 될 시간이 없습니다. ex)"./크로노마법 초기화 9"')
+        else:
+            await message.channel.send(f'현재시간 {myutil.datetime_str(datetime.datetime.now(self.guildDatas[message.guild.id].tzinfo))}')
+
+
+    async def command_random(self, message, args):
+        if len(args) > 1:
+            player = []
+            for arg in args:
+                if arg != args[0]:
+                    player.append(arg)
+
+            rand_len = int(args[0])
+            player_len = len(player)
+            result = ''
+            for idx in range(player_len):
+                if len(player) == 0:
+                    break
+                if idx > 0:
+                    result += '\n'
+                randidx = random.randrange(0,len(player))
+                if idx < rand_len:
+                    result += f'{idx+1}. :white_flower: **{player[randidx]}** :white_flower:'
+                elif idx >= player_len - rand_len:
+                    result += f'{idx+1}. :skull: *{player[randidx]}* :skull:'
+                else:
+                    result += f'{idx+1}. ~~{player[randidx]}~~'
+                del player[randidx]
+            await message.channel.send(result)
+        else:
+            await message.channel.send('형식이 올바르지 않습니다.')
 
 
     async def my_background_task(self):
