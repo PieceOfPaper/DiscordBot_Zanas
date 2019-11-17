@@ -177,7 +177,7 @@ class ZanasClient(discord.Client):
                         await message.channel.send(f'{waitToDatetime.name} 시간 정보없음.')
                     # else:
                     #     await message.channel.send(f'{waitToDatetime.name} 시간 {myutil.timedelta_str(waitToDatetime.get_remain_time())} 남음.')
-                    await message.channel.send(f'마지막으로 등록된 {waitToDatetime.name} 시간 {waitToDatetime.time.astimezone(self.guildDatas[message.guild.id].tzinfo)}')
+                    await message.channel.send(f'마지막으로 등록된 {waitToDatetime.name} 시간 {myutil.datetime_str(waitToDatetime.time.astimezone(self.guildDatas[message.guild.id].tzinfo))}')
 
 
     async def command_time(self, message, args):
@@ -185,11 +185,11 @@ class ZanasClient(discord.Client):
                 if args[0] == '초기화':
                     if len(args) > 1:
                         self.guildDatas[message.guild.id].tzinfo = datetime.timezone(datetime.timedelta(hours=int(args[1])))
-                        await message.channel.send(f'현재시간 {datetime.datetime.now(self.guildDatas[message.guild.id].tzinfo)}')
+                        await message.channel.send(f'현재시간 {myutil.datetime_str(datetime.datetime.now(self.guildDatas[message.guild.id].tzinfo))}')
                     else:
                         await message.channel.send('기준이 될 시간이 없습니다. ex)"./크로노마법 초기화 9"')
             else:
-                await message.channel.send(f'현재시간 {datetime.datetime.now(self.guildDatas[message.guild.id].tzinfo)}')
+                await message.channel.send(f'현재시간 {myutil.datetime_str(datetime.datetime.now(self.guildDatas[message.guild.id].tzinfo))}')
 
 
     async def my_background_task(self):
