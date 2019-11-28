@@ -3,25 +3,124 @@ import asyncio
 import sys
 import datetime
 import random
+import pymysql
 
 import myutil
 
 token = 'token'
+dbtype = 'local'
 
 for argIdx, argVal in enumerate(sys.argv):
     if argVal == '-token':
         token = sys.argv[argIdx + 1]
+    elif argVal == '-db':
+        dbtype = sys.argv[argIdx + 1]
+        
+def db_query(query):
+    if dbtype == 'local':
+        conn = pymysql.connect(host='localhost', user='root', password='localhost', db='discordbot_zanas', charset='utf8')
+    result = None
+    if query is not None:
+        cursor = conn.cursor()
+        print(f'db_query : {query}')
+        cursor.execute(query)
+        result = cursor.fetchall()
+        conn.commit()
+    conn.close()
+    return result
+
+def db_auto_str(value):
+    if type(value) is str:
+        return f'"{value}"'
+    elif type(value) is bool:
+        if value:
+            return 1
+        else:
+            return 0
+    elif type(value) is datetime.datetime:
+        datetime_str = value.strftime('%Y-%m-%d %H:%M:%S')
+        return f'"{datetime_str}"'
+    else:
+        return value
+
+def db_set_data(table, wheres, values):
+    select_result = db_get_data(table, wheres)
+    if len(select_result) > 0:
+        where_str = None
+        for key, val in wheres.items():
+            if where_str is None:
+                where_str = f'{key}={db_auto_str(val)}'
+            else:
+                where_str += f' AND {key}={db_auto_str(val)}'
+        set_str = None
+        for key, val in values.items():
+            if set_str is None:
+                set_str = f'{key}={db_auto_str(val)}'
+            else:
+                set_str += f',{key}={db_auto_str(val)}'
+        if where_str is None or set_str is None:
+            return
+        db_query(f'UPDATE {table} SET {set_str} WHERE {where_str}')
+    else:
+        cols = None
+        vals = None
+        for key, val in values.items():
+            if cols is None:
+                cols = f'{key}'
+                vals = f'{db_auto_str(val)}'
+            else:
+                cols += f',{key}'
+                vals += f',{db_auto_str(val)}'
+        for key, val in wheres.items():
+            if key in values:
+                continue
+            if cols is None:
+                cols = f'{key}'
+                vals = f'{db_auto_str(val)}'
+            else:
+                cols += f',{key}'
+                vals += f',{db_auto_str(val)}'
+        if cols is None or vals is None:
+            return
+        db_query(f'INSERT INTO {table}({cols}) VALUES ({vals})')
+
+def db_get_data(table, wheres):
+    where_str = None
+    for key, val in wheres.items():
+        if where_str is None:
+            where_str = f'{key}={db_auto_str(val)}'
+        else:
+            where_str += f' AND {key}={db_auto_str(val)}'
+    return db_query(f'SELECT * FROM {table} WHERE {where_str}')
+
 
 
 class WaitToDatetimeForm:
+    guild_id = 0
+    key_name = ''
     name = ''
     channel_id = 0
     time = datetime.datetime.utcnow()
     checked_30min = True
     checked_10min = True
 
-    def __init__(self, name):
+    def __init__(self, guild_id, key_name, name):
+        self.guild_id = guild_id
+        self.key_name = key_name
         self.name = name
+        results = db_get_data('wait2datetime', {'guild_id':self.guild_id, 'key_name':self.key_name})
+        if len(results) == 0:
+            db_set_data('wait2datetime', {'guild_id':self.guild_id, 'key_name':self.key_name}, {})
+            results = db_get_data('wait2datetime', {'guild_id':self.guild_id, 'key_name':self.key_name})
+        for result in results:
+            if result[2] is not None:
+                self.time = result[2]
+            if result[3] is not None:
+                self.channel_id = int(result[3])
+            if result[4] is not None:
+                self.checked_30min = int(result[4]) > 0
+            if result[4] is not None:
+                self.checked_10min = int(result[5]) > 0
 
     def get_remain_time(self):
         return self.time - datetime.datetime.utcnow()
@@ -40,11 +139,13 @@ class WaitToDatetimeForm:
             self.checked_10min = False
         else:
             self.checked_10min = True
+        db_set_data('wait2datetime', {'guild_id':self.guild_id, 'key_name':self.key_name}, {'time':self.time, 'checked_30min':self.checked_30min, 'checked_10min':self.checked_10min})
 
     def cancel_time(self):
         self.time = datetime.datetime.now()
         self.checked_30min = True
         self.checked_10min = True
+        db_set_data('wait2datetime', {'guild_id':self.guild_id, 'key_name':self.key_name}, {'time':self.time, 'checked_30min':self.checked_30min, 'checked_10min':self.checked_10min})
         
     def check_time(self):
         minutes, seconds = divmod(self.get_remain_time().seconds, 60)
@@ -57,17 +158,30 @@ class WaitToDatetimeForm:
 
 class GuildData:
     id = 0
-    last_channel_id = 0
     tzinfo = None
-    
     
     waitToDatetime = dict()
 
     def __init__(self, id):
         self.id = id
-        self.waitToDatetime['fb_1'] = WaitToDatetimeForm('숲필보 젠')
-        self.waitToDatetime['fb_2'] = WaitToDatetimeForm('도심필보 젠')
-        self.waitToDatetime['fb_m'] = WaitToDatetimeForm('모링포니아 젠')
+        self.tzinfo = datetime.timezone(datetime.timedelta(hours=0))
+
+        results = db_get_data('guild', {'id':self.id})
+        if len(results) == 0:
+            db_set_data('guild', {'id':self.id}, {})
+            results = db_get_data('guild', {'id':self.id})
+        for result in results:
+            if result[1] is not None:
+                self.tzinfo = datetime.timezone(datetime.timedelta(hours=int(result[1])))
+            
+        self.waitToDatetime['fb_1'] = WaitToDatetimeForm(self.id, 'fb_1', '숲필보 젠')
+        self.waitToDatetime['fb_2'] = WaitToDatetimeForm(self.id, 'fb_2', '도심필보 젠')
+        self.waitToDatetime['fb_moring'] = WaitToDatetimeForm(self.id, 'fb_moring', '모링포니아 젠')
+    
+    def set_timezone(self, hour):
+        self.tzinfo = datetime.timezone(datetime.timedelta(hours=hour))
+        db_set_data('guild', {'id':self.id}, {'timezone':hour})
+
 
 
 class ZanasClient(discord.Client):
@@ -167,7 +281,7 @@ class ZanasClient(discord.Client):
                     elif args[0] == '도심':
                         waitTimeKey = 'fb_2'
                     elif args[0] == '모링' or args[0] == '모링포니아':
-                        waitTimeKey = 'fb_m'
+                        waitTimeKey = 'fb_moring'
                     waitToDatetime = self.guildDatas[message.guild.id].waitToDatetime[waitTimeKey]
                     if len(args) > 1:
                         if args[1] == '킬':
@@ -189,7 +303,7 @@ class ZanasClient(discord.Client):
         if len(args) > 0:
             if args[0] == '초기화':
                 if len(args) > 1:
-                    self.guildDatas[message.guild.id].tzinfo = datetime.timezone(datetime.timedelta(hours=int(args[1])))
+                    self.guildDatas[message.guild.id].set_timezone(int(args[1]))
                     await message.channel.send(f'현재시간 {myutil.datetime_str(datetime.datetime.now(self.guildDatas[message.guild.id].tzinfo))}')
                 else:
                     await message.channel.send('기준이 될 시간이 없습니다. ex)"./크로노마법 초기화 9"')
@@ -244,5 +358,6 @@ class ZanasClient(discord.Client):
             await asyncio.sleep(1)
 
 
+db_query(None) #test connect
 client = ZanasClient()
 client.run(token)
