@@ -30,6 +30,8 @@ def db_query(query):
     return result
 
 def db_auto_str(value):
+    if value is None:
+        return 'NULL'
     if type(value) is str:
         return f'"{value}"'
     elif type(value) is bool:
@@ -100,10 +102,11 @@ class WaitToDatetimeForm:
     key_name = ''
     name = ''
     channel_id = 0
-    time = datetime.datetime.utcnow()
+    time = None
     checked_30min = True
     checked_10min = True
 
+    #
     def __init__(self, guild_id, key_name, name):
         self.guild_id = guild_id
         self.key_name = key_name
@@ -117,20 +120,31 @@ class WaitToDatetimeForm:
                 self.time = result[2]
             if result[3] is not None:
                 self.channel_id = int(result[3])
-            if result[4] is not None:
-                self.checked_30min = int(result[4]) > 0
-            if result[4] is not None:
-                self.checked_10min = int(result[5]) > 0
 
+        self.update_checked()
+
+    #
+    def set_channel_id(self, ch_id):
+        self.channel_id = ch_id
+        db_set_data('wait2datetime', {'guild_id':self.guild_id, 'key_name':self.key_name}, {'channel_id':self.channel_id})
+
+    #
     def get_remain_time(self):
+        if self.time is None:
+            return None
         return self.time - datetime.datetime.utcnow()
 
+    #
     def can_check_time(self):
         return (not self.checked_30min) or (not self.checked_10min)
 
-    def reset_time(self, time):
-        self.time = time
-        minutes, seconds = divmod(self.get_remain_time().seconds, 60)
+    #
+    def update_checked(self):
+        remain_time = self.get_remain_time()
+        if remain_time is None:
+            minutes = 0
+        else:
+            minutes, seconds = divmod(self.get_remain_time().seconds, 60)
         if minutes >= 30:
             self.checked_30min = False
         else:
@@ -139,14 +153,18 @@ class WaitToDatetimeForm:
             self.checked_10min = False
         else:
             self.checked_10min = True
-        db_set_data('wait2datetime', {'guild_id':self.guild_id, 'key_name':self.key_name}, {'time':self.time, 'checked_30min':self.checked_30min, 'checked_10min':self.checked_10min})
 
+    #
+    def set_time(self, time):
+        self.time = time
+        self.update_checked()
+        db_set_data('wait2datetime', {'guild_id':self.guild_id, 'key_name':self.key_name}, {'time':self.time})
+
+    #
     def cancel_time(self):
-        self.time = datetime.datetime.now()
-        self.checked_30min = True
-        self.checked_10min = True
-        db_set_data('wait2datetime', {'guild_id':self.guild_id, 'key_name':self.key_name}, {'time':self.time, 'checked_30min':self.checked_30min, 'checked_10min':self.checked_10min})
+        self.set_time(None)
         
+    #
     def check_time(self):
         minutes, seconds = divmod(self.get_remain_time().seconds, 60)
         if (not self.checked_30min) and minutes < 30:
@@ -272,7 +290,9 @@ class ZanasClient(discord.Client):
     async def command_fieldboss(self, message, args):
             if len(args) > 0:
                 if args[0] == '고정':
-                    self.guildDatas[message.guild.id].fieldboss_channel_id = message.channel.id
+                    self.guildDatas[message.guild.id].waitToDatetime['fb_1'].set_channel_id(message.channel.id)
+                    self.guildDatas[message.guild.id].waitToDatetime['fb_2'].set_channel_id(message.channel.id)
+                    self.guildDatas[message.guild.id].waitToDatetime['fb_moring'].set_channel_id(message.channel.id)
                     await message.channel.send(f'필보 알림 채널 설정 <#{message.channel.id}>')
                 else:
                     waitTimeKey = ''
@@ -286,17 +306,16 @@ class ZanasClient(discord.Client):
                     if len(args) > 1:
                         if args[1] == '킬':
                             if waitToDatetime.channel_id == 0:
-                                waitToDatetime.channel_id = message.channel.id
-                            waitToDatetime.reset_time(datetime.datetime.utcnow() + datetime.timedelta(hours=4, minutes=10))
+                                waitToDatetime.set_channel_id(message.channel.id)
+                            waitToDatetime.set_time(datetime.datetime.utcnow() + datetime.timedelta(hours=4, minutes=10))
                             # await message.channel.send(f'{waitToDatetime.name} 시간 등록.')
                         elif args[1] == '취소':
                             waitToDatetime.cancel_time()
                             # await message.channel.send(f'{waitToDatetime.name} 시간 등록취소.')
-                    if not waitToDatetime.can_check_time():
+                    if waitToDatetime.time is None:
                         await message.channel.send(f'{waitToDatetime.name} 시간 정보없음.')
-                    # else:
-                    #     await message.channel.send(f'{waitToDatetime.name} 시간 {myutil.timedelta_str(waitToDatetime.get_remain_time())} 남음.')
-                    await message.channel.send(f'마지막으로 등록된 {waitToDatetime.name} 시간 {myutil.datetime_str(waitToDatetime.time.astimezone(self.guildDatas[message.guild.id].tzinfo))}')
+                    else:
+                        await message.channel.send(f'마지막으로 등록된 {waitToDatetime.name} 시간 {myutil.datetime_str(waitToDatetime.time.astimezone(self.guildDatas[message.guild.id].tzinfo))}')
 
 
     async def command_time(self, message, args):
