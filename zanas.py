@@ -6,94 +6,16 @@ import random
 import pymysql
 
 import myutil
+import sqlutil
 
 token = 'token'
-dbtype = 'local'
 
 for argIdx, argVal in enumerate(sys.argv):
     if argVal == '-token':
         token = sys.argv[argIdx + 1]
     elif argVal == '-db':
-        dbtype = sys.argv[argIdx + 1]
-        
-def db_query(query):
-    if dbtype == 'local':
-        conn = pymysql.connect(host='localhost', user='root', password='localhost', db='discordbot_zanas', charset='utf8')
-    result = None
-    if query is not None:
-        cursor = conn.cursor()
-        print(f'db_query : {query}')
-        cursor.execute(query)
-        result = cursor.fetchall()
-        conn.commit()
-    conn.close()
-    return result
+        sqlutil.dbtype = sys.argv[argIdx + 1]
 
-def db_auto_str(value):
-    if value is None:
-        return 'NULL'
-    if type(value) is str:
-        return f'"{value}"'
-    elif type(value) is bool:
-        if value:
-            return 1
-        else:
-            return 0
-    elif type(value) is datetime.datetime:
-        datetime_str = value.strftime('%Y-%m-%d %H:%M:%S')
-        return f'"{datetime_str}"'
-    else:
-        return value
-
-def db_set_data(table, wheres, values):
-    select_result = db_get_data(table, wheres)
-    if len(select_result) > 0:
-        where_str = None
-        for key, val in wheres.items():
-            if where_str is None:
-                where_str = f'{key}={db_auto_str(val)}'
-            else:
-                where_str += f' AND {key}={db_auto_str(val)}'
-        set_str = None
-        for key, val in values.items():
-            if set_str is None:
-                set_str = f'{key}={db_auto_str(val)}'
-            else:
-                set_str += f',{key}={db_auto_str(val)}'
-        if where_str is None or set_str is None:
-            return
-        db_query(f'UPDATE {table} SET {set_str} WHERE {where_str}')
-    else:
-        cols = None
-        vals = None
-        for key, val in values.items():
-            if cols is None:
-                cols = f'{key}'
-                vals = f'{db_auto_str(val)}'
-            else:
-                cols += f',{key}'
-                vals += f',{db_auto_str(val)}'
-        for key, val in wheres.items():
-            if key in values:
-                continue
-            if cols is None:
-                cols = f'{key}'
-                vals = f'{db_auto_str(val)}'
-            else:
-                cols += f',{key}'
-                vals += f',{db_auto_str(val)}'
-        if cols is None or vals is None:
-            return
-        db_query(f'INSERT INTO {table}({cols}) VALUES ({vals})')
-
-def db_get_data(table, wheres):
-    where_str = None
-    for key, val in wheres.items():
-        if where_str is None:
-            where_str = f'{key}={db_auto_str(val)}'
-        else:
-            where_str += f' AND {key}={db_auto_str(val)}'
-    return db_query(f'SELECT * FROM {table} WHERE {where_str}')
 
 
 
@@ -111,10 +33,10 @@ class WaitToDatetimeForm:
         self.guild_id = guild_id
         self.key_name = key_name
         self.name = name
-        results = db_get_data('wait2datetime', {'guild_id':self.guild_id, 'key_name':self.key_name})
+        results = sqlutil.db_get_data('wait2datetime', {'guild_id':self.guild_id, 'key_name':self.key_name})
         if len(results) == 0:
-            db_set_data('wait2datetime', {'guild_id':self.guild_id, 'key_name':self.key_name}, {})
-            results = db_get_data('wait2datetime', {'guild_id':self.guild_id, 'key_name':self.key_name})
+            sqlutil.db_set_data('wait2datetime', {'guild_id':self.guild_id, 'key_name':self.key_name}, {})
+            results = sqlutil.db_get_data('wait2datetime', {'guild_id':self.guild_id, 'key_name':self.key_name})
         for result in results:
             if result[2] is not None:
                 self.time = result[2]
@@ -126,7 +48,7 @@ class WaitToDatetimeForm:
     #
     def set_channel_id(self, ch_id):
         self.channel_id = ch_id
-        db_set_data('wait2datetime', {'guild_id':self.guild_id, 'key_name':self.key_name}, {'channel_id':self.channel_id})
+        sqlutil.db_set_data('wait2datetime', {'guild_id':self.guild_id, 'key_name':self.key_name}, {'channel_id':self.channel_id})
 
     #
     def get_remain_time(self):
@@ -158,7 +80,7 @@ class WaitToDatetimeForm:
     def set_time(self, time):
         self.time = time
         self.update_checked()
-        db_set_data('wait2datetime', {'guild_id':self.guild_id, 'key_name':self.key_name}, {'time':self.time})
+        sqlutil.db_set_data('wait2datetime', {'guild_id':self.guild_id, 'key_name':self.key_name}, {'time':self.time})
 
     #
     def cancel_time(self):
@@ -184,10 +106,10 @@ class GuildData:
         self.id = id
         self.tzinfo = datetime.timezone(datetime.timedelta(hours=0))
 
-        results = db_get_data('guild', {'id':self.id})
+        results = sqlutil.db_get_data('guild', {'id':self.id})
         if len(results) == 0:
-            db_set_data('guild', {'id':self.id}, {})
-            results = db_get_data('guild', {'id':self.id})
+            sqlutil.db_set_data('guild', {'id':self.id}, {})
+            results = sqlutil.db_get_data('guild', {'id':self.id})
         for result in results:
             if result[1] is not None:
                 self.tzinfo = datetime.timezone(datetime.timedelta(hours=int(result[1])))
@@ -198,7 +120,7 @@ class GuildData:
     
     def set_timezone(self, hour):
         self.tzinfo = datetime.timezone(datetime.timedelta(hours=hour))
-        db_set_data('guild', {'id':self.id}, {'timezone':hour})
+        sqlutil.db_set_data('guild', {'id':self.id}, {'timezone':hour})
 
 
 
@@ -377,6 +299,6 @@ class ZanasClient(discord.Client):
             await asyncio.sleep(1)
 
 
-db_query(None) #test connect
+sqlutil.db_query(None) #test connect
 client = ZanasClient()
 client.run(token)
