@@ -299,6 +299,6 @@ class ZanasClient(discord.Client):
             await asyncio.sleep(1)
 
 
-sqlutil.db_query(None) #test connect
+sqlutil.db_table_setting()
 client = ZanasClient()
 client.run(token)

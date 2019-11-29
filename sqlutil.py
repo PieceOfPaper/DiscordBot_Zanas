@@ -3,9 +3,24 @@ import pymysql
 
 dbtype = 'local'
 
+table_setting = dict()
+
+table_setting['guild'] = []
+table_setting['guild'].append('id bigint(20)')
+table_setting['guild'].append('timezone int(11)')
+
+table_setting['wait2datetime'] = []
+table_setting['wait2datetime'].append('guild_id bigint(20)')
+table_setting['wait2datetime'].append('key_name varchar(45)')
+table_setting['wait2datetime'].append('time datetime')
+table_setting['wait2datetime'].append('channel_id bigint(20)')
+
+#
 def db_query(query):
     if dbtype == 'local':
-        conn = pymysql.connect(host='localhost', user='root', password='localhost', db='discordbot_zanas', charset='utf8')
+        conn = pymysql.connect(host='localhost', user='root', password='localhost', db='discordbot_zanas')
+    elif dbtype == 'live':
+        conn = pymysql.connect(host='remotemysql.com', user='8dsGgaueIQ', password='Mc95OQq01F', db='8dsGgaueIQ')
     result = None
     print(f'db_query : {query}')
     if query is not None:
@@ -16,6 +31,7 @@ def db_query(query):
     conn.close()
     return result
 
+#
 def db_auto_str(value):
     if value is None:
         return 'NULL'
@@ -32,6 +48,26 @@ def db_auto_str(value):
     else:
         return value
 
+#
+def db_table_setting():
+    print('db table setting')
+    for tablename, args in table_setting.items():
+        argstr = None
+        print(len(args))
+        for arg in args:
+            if argstr is None:
+                argstr = arg
+            else:
+                argstr += ','+arg
+        db_query(f'CREATE TABLE IF NOT EXISTS {tablename} ({argstr})')
+        for arg in args:
+            has_col = db_query(f'SHOW COLUMNS FROM {tablename} LIKE "{arg.strip().split(" ")[0]}"')
+            if has_col is not None and len(has_col) > 0:
+                db_query(f'ALTER TABLE {tablename} MODIFY COLUMN {arg}')
+            else:
+                db_query(f'ALTER TABLE {tablename} ADD COLUMN {arg}')
+
+#
 def db_set_data(table, wheres, values):
     select_result = db_get_data(table, wheres)
     if len(select_result) > 0:
@@ -73,6 +109,7 @@ def db_set_data(table, wheres, values):
             return
         db_query(f'INSERT INTO {table}({cols}) VALUES ({vals})')
 
+#
 def db_get_data(table, wheres):
     where_str = None
     for key, val in wheres.items():
