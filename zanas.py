@@ -197,6 +197,12 @@ class ZanasClient(discord.Client):
                 elif args[0] == './오미쿠지':
                     del args[0]
                     await self.command_random(message, args)
+                elif args[0] == './메모':
+                    del args[0]
+                    await self.command_memo(message, args)
+                elif args[0] == './메모쓰기':
+                    args[0] = '쓰기'
+                    await self.command_memo(message, args)
                 elif args[0] == './자나스':
                     if len(args) > 1 and args[1] == '도와줘':
                         help_message = '- 필보관련 명령어\n'
@@ -279,6 +285,39 @@ class ZanasClient(discord.Client):
         else:
             await message.channel.send('형식이 올바르지 않습니다.')
 
+    async def command_memo(self, message, args):
+        if len(args) > 0:
+            if args[0] == '쓰기':
+                key_name = None
+                content = None
+                lines = message.content.split('\n')
+                if len(lines) > 1:
+                    content = message.content.replace(lines[0]+'\n', '')
+                    if len(args) > 1:
+                        key_name = args[1].split('\n')[0]
+                if key_name is None:
+                    await message.channel.send('형식이 올바르지 않습니다.')
+                else:
+                    sqlutil.db_set_data('memo', {'user_id':message.author.id, 'key_name':key_name}, {'content':content})
+                    await message.channel.send(f'**[{key_name}]**메모 저장 완료.')
+            # elif args[0] == '삭제':
+            #     key_name = None
+            #     if len(args) > 1:
+            #         key_name = args[1].replace('\n','')
+            #     if key_name is None:
+            #         await message.channel.send('형식이 올바르지 않습니다.')
+            #     else:
+            #         print('query')
+            #         print('succes chat')
+            else:
+                key_name = args[0].replace('\n','')
+                results = sqlutil.db_get_data('memo', {'user_id':message.author.id, 'key_name':key_name})
+                if results is not None and len(results) > 0:
+                    await message.channel.send(f'<@{message.author.id}>님의 **[{key_name}]**메모.\n```{results[0][2]}```')
+                else:
+                    await message.channel.send(f'[{key_name}]메모에 내용이 없습니다.')
+        else:
+            await message.channel.send('형식이 올바르지 않습니다.')
 
     async def my_background_task(self):
         await self.wait_until_ready()

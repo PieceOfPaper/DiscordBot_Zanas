@@ -15,6 +15,11 @@ table_setting['wait2datetime'].append('key_name varchar(45)')
 table_setting['wait2datetime'].append('time datetime')
 table_setting['wait2datetime'].append('channel_id bigint(20)')
 
+table_setting['memo'] = []
+table_setting['memo'].append('user_id bigint(20)')
+table_setting['memo'].append('key_name varchar(45)')
+table_setting['memo'].append('content text')
+
 #
 def db_query(query):
     if dbtype == 'local':
