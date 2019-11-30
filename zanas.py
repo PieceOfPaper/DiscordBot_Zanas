@@ -179,7 +179,7 @@ class ZanasClient(discord.Client):
                     print(f'channel: {message.channel.name}({message.channel.id})')
                     print(f'guild: {message.guild.name}({message.guild.id})')
                     await message.channel.send('print debug.')
-                elif args[0] == './필보자나스':
+                elif args[0] == './필보':
                     del args[0]
                     await self.command_fieldboss(message, args)
                 elif args[0] == './숲필보':
@@ -204,16 +204,7 @@ class ZanasClient(discord.Client):
                     args[0] = '쓰기'
                     await self.command_memo(message, args)
                 elif args[0] == './자나스':
-                    if len(args) > 1 and args[1] == '도와줘':
-                        help_message = '- 필보관련 명령어\n'
-                        help_message += './필보자나스 [숲/도심/모링] [X/킬/취소]\n'
-                        help_message += './숲필보 [X/킬/취소]\n'
-                        help_message += './도심필보 [X/킬/취소]\n'
-                        help_message += './모링 [X/킬/취소]\n'
-                        help_message += './모링포니아 [X/킬/취소]\n'
-                        await message.channel.send(help_message)
-                    else:
-                        await message.channel.send('계시자.. 이 목소리가 들린다면 나를 찾아와줘..')
+                    await message.channel.send('계시자.. 이 목소리가 들린다면 나를 찾아와줘..')
 
     async def command_fieldboss(self, message, args):
             if len(args) > 0:
@@ -236,14 +227,32 @@ class ZanasClient(discord.Client):
                             if waitToDatetime.channel_id == 0:
                                 waitToDatetime.set_channel_id(message.channel.id)
                             waitToDatetime.set_time(datetime.datetime.utcnow() + datetime.timedelta(hours=4, minutes=10))
-                            # await message.channel.send(f'{waitToDatetime.name} 시간 등록.')
                         elif args[1] == '취소':
                             waitToDatetime.cancel_time()
-                            # await message.channel.send(f'{waitToDatetime.name} 시간 등록취소.')
                     if waitToDatetime.time is None:
                         await message.channel.send(f'{waitToDatetime.name} 시간 정보없음.')
                     else:
                         await message.channel.send(f'마지막으로 등록된 {waitToDatetime.name} 시간 {myutil.datetime_str(waitToDatetime.time.astimezone(self.guildDatas[message.guild.id].tzinfo))}')
+            else:
+                help_message = '**- 필보 시간 보기**\n'
+                help_message += '```'
+                help_message += './숲필보\n'
+                help_message += './도심필보\n'
+                help_message += './모링\n'
+                help_message += '```'
+                help_message += '**- 필보 시간 기록**\n'
+                help_message += '```'
+                help_message += './숲필보 킬\n'
+                help_message += './도심필보 킬\n'
+                help_message += './모링 킬\n'
+                help_message += '```'
+                help_message += '**- 필보 시간 취소**\n'
+                help_message += '```'
+                help_message += './숲필보 취소\n'
+                help_message += './도심필보 취소\n'
+                help_message += './모링 취소\n'
+                help_message += '```'
+                await message.channel.send(help_message)
 
 
     async def command_time(self, message, args):
@@ -283,7 +292,9 @@ class ZanasClient(discord.Client):
                 del player[randidx]
             await message.channel.send(result)
         else:
-            await message.channel.send('형식이 올바르지 않습니다.')
+            help_message = '**- 사용법**\n'
+            help_message += '```./오미쿠지 [당첨자수] [대상1] [대상2] [대상3] ... [대상n]```\n'
+            await message.channel.send(help_message)
 
     async def command_memo(self, message, args):
         if len(args) > 0:
@@ -317,7 +328,7 @@ class ZanasClient(discord.Client):
                 else:
                     await message.channel.send(f'[{key_name}]메모에 내용이 없습니다.')
         else:
-            help_message = '**- 메모 불러오기**\n'
+            help_message = '**- 메모 보기**\n'
             help_message += '```./메모 [메모이름]```\n'
             help_message += '**- 메모 쓰기**\n'
             help_message += '```./메모쓰기 [메모이름]\n[메모내용]```\n'
