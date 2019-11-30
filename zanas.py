@@ -412,8 +412,14 @@ class ZanasClient(discord.Client):
                 result_message += '```'
                 await message.channel.send(result_message)
         else:
-            help_message = '**- 사용법**\n'
-            # help_message += '```./오미쿠지 [당첨자수] [대상1] [대상2] [대상3] ... [대상n]```\n'
+            help_message = '**- 모루 강화**\n'
+            help_message += '```./모루강화 [장비타입] [포텐셜]\nex) ./모루강화 무기 11```\n'
+            help_message += '**- 다이아 모루 강화**\n'
+            help_message += '```./다모강화 [장비타입] [포텐셜]\nex) ./다모강화 무기 11```\n'
+            help_message += '**- 황금 모루 강화**\n'
+            help_message += '```./황모강화 [장비타입] [현재강화] (횟수)\nex) ./황모강화 무기 +8 5```\n'
+            help_message += '**- 루비 모루 강화**\n'
+            help_message += '```./루모강화 [장비타입] [현재강화] (횟수)\nex) ./루모강화 무기 +13 4```\n'
             await message.channel.send(help_message)
 
 
