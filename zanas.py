@@ -203,6 +203,21 @@ class ZanasClient(discord.Client):
                 elif args[0] == './메모쓰기':
                     args[0] = '쓰기'
                     await self.command_memo(message, args)
+                elif args[0] == './강화':
+                    del args[0]
+                    await self.command_reinforce_simulate(message, args)
+                elif args[0] == './모루강화':
+                    args[0] = '모루'
+                    await self.command_reinforce_simulate(message, args)
+                elif args[0] == './다모강화':
+                    args[0] = '다이아모루'
+                    await self.command_reinforce_simulate(message, args)
+                elif args[0] == './황모강화':
+                    args[0] = '황금모루'
+                    await self.command_reinforce_simulate(message, args)
+                elif args[0] == './루모강화':
+                    args[0] = '루비모루'
+                    await self.command_reinforce_simulate(message, args)
                 elif args[0] == './자나스':
                     await message.channel.send('계시자.. 이 목소리가 들린다면 나를 찾아와줘..')
 
@@ -333,6 +348,74 @@ class ZanasClient(discord.Client):
             help_message += '**- 메모 쓰기**\n'
             help_message += '```./메모쓰기 [메모이름]\n[메모내용]```\n'
             await message.channel.send(help_message)
+
+
+    async def command_reinforce_simulate(self, message, args):
+        if len(args) > 2:
+            if args[0] == '모루' or args[0] == '다이아모루':
+                safe_reinforce = 3
+                if args[1] == '무기':
+                    safe_reinforce = 5
+                potential = int(args[2])
+                reinforce = 0
+                count = 0
+                log = ''
+                while potential > 0:
+                    if reinforce < safe_reinforce:
+                        reinforce += 1
+                    else:
+                        if random.randrange(0,10000) < 5100:
+                            reinforce += 1
+                        else:
+                            if args[0] != '다이아모루':
+                                reinforce -= 1
+                            potential -= 1
+                    count += 1
+                    log += f'+{reinforce} '
+                
+                result_message = f'**:crossed_swords: +{reinforce}**\n'
+                result_message += '```'
+                result_message += f'강화횟수: {count}\n'
+                result_message += log
+                result_message += '```'
+                await message.channel.send(result_message)
+            elif args[0] == '황금모루' or args[0] == '루비모루':
+                safe_reinforce = 3
+                if args[1] == '무기':
+                    safe_reinforce = 5
+                count_max = 1
+                if len(args) > 3:
+                    count_max = int(args[3])
+                reinforce = int(args[2].replace('+',''))
+                count = 0
+                log = ''
+                while count < count_max:
+                    if reinforce < safe_reinforce:
+                        reinforce += 1
+                    else:
+                        if random.randrange(0,10000) < 5100:
+                            reinforce += 1
+                        else:
+                            if args[0] == '황금모루' and reinforce > 10:
+                                reinforce = 10
+                            elif args[0] == '루비모루' and reinforce > 15:
+                                reinforce = 15
+                            else:
+                                reinforce -= 1
+                    count += 1
+                    log += f'+{reinforce} '
+                
+                result_message = f'**:crossed_swords: +{reinforce}**\n'
+                result_message += '```'
+                result_message += f'강화횟수: {count}\n'
+                result_message += log
+                result_message += '```'
+                await message.channel.send(result_message)
+        else:
+            help_message = '**- 사용법**\n'
+            # help_message += '```./오미쿠지 [당첨자수] [대상1] [대상2] [대상3] ... [대상n]```\n'
+            await message.channel.send(help_message)
+
 
     async def my_background_task(self):
         await self.wait_until_ready()
