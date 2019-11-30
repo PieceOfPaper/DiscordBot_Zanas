@@ -317,7 +317,11 @@ class ZanasClient(discord.Client):
                 else:
                     await message.channel.send(f'[{key_name}]메모에 내용이 없습니다.')
         else:
-            await message.channel.send('형식이 올바르지 않습니다.')
+            help_message = '**- 메모 불러오기**\n'
+            help_message += '```./메모 [메모이름]```\n'
+            help_message += '**- 메모 쓰기**\n'
+            help_message += '```./메모쓰기 [메모이름]\n[메모내용]```\n'
+            await message.channel.send(help_message)
 
     async def my_background_task(self):
         await self.wait_until_ready()
