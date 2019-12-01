@@ -358,14 +358,19 @@ class ZanasClient(discord.Client):
                     safe_reinforce = 5
                 potential = int(args[2])
                 reinforce = 0
+                reinforce_max = 0
                 count = 0
                 log = ''
                 while potential > 0:
                     if reinforce < safe_reinforce:
                         reinforce += 1
+                        if reinforce > reinforce_max:
+                            reinforce_max = reinforce
                     else:
                         if random.randrange(0,10000) < 5100:
                             reinforce += 1
+                            if reinforce > reinforce_max:
+                                reinforce_max = reinforce
                         else:
                             if args[0] != '다이아모루':
                                 reinforce -= 1
@@ -376,6 +381,7 @@ class ZanasClient(discord.Client):
                 result_message = f'**:crossed_swords: +{reinforce}**\n'
                 result_message += '```'
                 result_message += f'강화횟수: {count}\n'
+                result_message += f'최대강화: +{reinforce_max}\n'
                 result_message += log
                 result_message += '```'
                 await message.channel.send(result_message)
@@ -387,14 +393,19 @@ class ZanasClient(discord.Client):
                 if len(args) > 3:
                     count_max = int(args[3])
                 reinforce = int(args[2].replace('+',''))
+                reinforce_max = reinforce
                 count = 0
                 log = ''
                 while count < count_max:
                     if reinforce < safe_reinforce:
                         reinforce += 1
+                        if reinforce > reinforce_max:
+                            reinforce_max = reinforce
                     else:
                         if random.randrange(0,10000) < 5100:
                             reinforce += 1
+                            if reinforce > reinforce_max:
+                                reinforce_max = reinforce
                         else:
                             if args[0] == '황금모루' and reinforce > 10:
                                 reinforce = 10
@@ -408,6 +419,7 @@ class ZanasClient(discord.Client):
                 result_message = f'**:crossed_swords: +{reinforce}**\n'
                 result_message += '```'
                 result_message += f'강화횟수: {count}\n'
+                result_message += f'최대강화: +{reinforce_max}\n'
                 result_message += log
                 result_message += '```'
                 await message.channel.send(result_message)
