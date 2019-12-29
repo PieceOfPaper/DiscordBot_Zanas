@@ -220,6 +220,16 @@ class ZanasClient(discord.Client):
                     await self.command_reinforce_simulate(message, args)
                 elif args[0] == './자나스':
                     await message.channel.send('계시자.. 이 목소리가 들린다면 나를 찾아와줘..')
+            elif args[0].startswith('<:') and args[0].endswith('>'):
+                emoji_id = int(message.content.split(':')[2].replace('>',''))
+                author_member = message.guild.get_member(message.author.id)
+                embed = discord.Embed()
+                embed.set_author(name=author_member.nick, url=f'https://discordapp.com/users/{message.author.id}', icon_url=message.author.avatar_url)
+                embed.set_image(url=f'https://cdn.discordapp.com/emojis/{emoji_id}.png')
+                await message.delete()
+                await message.channel.send(embed=embed)
+            
+
 
     async def command_fieldboss(self, message, args):
             if len(args) > 0:
