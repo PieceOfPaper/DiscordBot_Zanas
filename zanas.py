@@ -223,8 +223,11 @@ class ZanasClient(discord.Client):
             elif args[0].startswith('<:') and args[0].endswith('>'):
                 emoji_id = int(message.content.split(':')[2].replace('>',''))
                 author_member = message.guild.get_member(message.author.id)
+                author_name = message.author.name
+                if author_member.nick is not None:
+                    author_name = author_member.nick
                 embed = discord.Embed()
-                embed.set_author(name=author_member.nick, url=f'https://discordapp.com/users/{message.author.id}', icon_url=message.author.avatar_url)
+                embed.set_author(name=author_name, url=f'https://discordapp.com/users/{message.author.id}', icon_url=message.author.avatar_url)
                 embed.set_image(url=f'https://cdn.discordapp.com/emojis/{emoji_id}.png')
                 await message.delete()
                 await message.channel.send(embed=embed)
