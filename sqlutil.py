@@ -25,7 +25,7 @@ def db_query(query):
     if dbtype == 'local':
         conn = pymysql.connect(host='localhost', user='root', password='localhost', db='discordbot_zanas')
     elif dbtype == 'live':
-        conn = pymysql.connect(host='remotemysql.com', user='8dsGgaueIQ', password='Mc95OQq01F', db='8dsGgaueIQ')
+        conn = pymysql.connect(host='HOST', user='USER', password='PWD', db='DB')
     result = None
     print(f'db_query : {query}')
     if query is not None:
